@@ -97,5 +97,16 @@ if analyze_btn:
                     fig_gauge.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color': "white"}, height=300, margin=dict(l=20,r=20,t=40,b=20))
                     st.plotly_chart(fig_gauge, use_container_width=True)
                 
-                with col2:
-                    st.subheader
+               with col2:
+                    # 確保這裡是用括號 () 而不是等號 =
+                    st.subheader(f"📊 {stock_id} 交叉驗證結論") 
+                    
+                    if ai_score >= 75:
+                        st.success("✅ **【強烈推薦】** 數據已避開重複歷史高點，目前具備極佳進場條件。")
+                    elif ai_score >= 45:
+                        st.warning("⚠️ **【中性觀察】** 趨勢盤整中，建議分批佈局。")
+                    else:
+                        st.error("❌ **【風險警示】** 數據與歷史高壓區重疊，建議暫避鋒芒。")
+                    
+                    st.write(f"目前收盤：{latest['Close']:.1f}")
+                    st.write(f"RSI 強度：{latest['RSI']:.1f}")
