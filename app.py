@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # 1. 頁面配置
 st.set_page_config(page_title="AI 技術分析系統", layout="wide")
@@ -23,7 +24,10 @@ def tech_score_logic(df):
 st.title("🛡️ AI 股市技術分析系統")
 with st.sidebar:
     st.header("🔍 分析設定")
-    stock_id = st.text_input("輸入台股代碼", "2330.TW")
+    # 修改：引導用戶只輸入數字
+    raw_input = st.text_input("輸入台股代碼 (只填數字)", "2330")
+    # 自動處理代碼：如果是純數字則加上 .TW
+    stock_id = f"{raw_input}.TW" if raw_input.isdigit() else raw_input
     period = st.selectbox("時間軸", ["1y", "6mo", "2y"])
     analyze_btn = st.button("🚀 執行技術驗證")
 
@@ -58,13 +62,22 @@ if analyze_btn:
                     st.write(f"目前價格：{latest['Close']:.1f} / RSI：{latest['RSI']:.1f}")
 
             with t2:
-                fig_k = go.Figure()
-                fig_k.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='K線'))
-                fig_k.add_trace(go.Scatter(x=df.index, y=df['MA5'], name='5日', line=dict(color='yellow', width=1)))
-                fig_k.add_trace(go.Scatter(x=df.index, y=df['MA10'], name='10日', line=dict(color='magenta', width=1)))
-                fig_k.add_trace(go.Scatter(x=df.index, y=df['MA20'], name='20日', line=dict(color='#00d4ff', width=2)))
-                fig_k.add_trace(go.Scatter(x=df.index, y=df['MA60'], name='60日', line=dict(color='lime', width=2)))
-                fig_k.update_layout(template="plotly_dark", height=600, xaxis_rangeslider_visible=False, legend=dict(orientation="h", y=1.1))
+                # 建立子圖：上方為 K 線 (row1)，下方為成交量 (row2)
+                fig_k = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.7, 0.3])
+                
+                # K 線圖
+                fig_k.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='K線'), row=1, col=1)
+                
+                # 均線
+                colors = {'MA5':'yellow', 'MA10':'magenta', 'MA20':'#00d4ff', 'MA60':'lime'}
+                for ma in colors:
+                    fig_k.add_trace(go.Scatter(x=df.index, y=df[ma], name=ma, line=dict(color=colors[ma], width=1.5)), row=1, col=1)
+                
+                # 成交量圖 (漲紅跌綠)
+                bar_colors = ['red' if df['Close'][i] >= df['Open'][i] else 'green' for i in range(len(df))]
+                fig_k.add_trace(go.Bar(x=df.index, y=df['Volume'], name='成交量', marker_color=bar_colors, opacity=0.8), row=2, col=1)
+                
+                fig_k.update_layout(template="plotly_dark", height=800, xaxis_rangeslider_visible=False, legend=dict(orientation="h", y=1.05))
                 st.plotly_chart(fig_k, use_container_width=True)
         else:
-            st.error("查無資料")
+            st.error(f"查無資料，請確認代碼是否正確: {stock_id}")
