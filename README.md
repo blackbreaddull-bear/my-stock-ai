@@ -1,1 +1,5 @@
-# my-stock-ai
+streamlit
+yfinance
+pandas
+pandas_ta
+plotly
