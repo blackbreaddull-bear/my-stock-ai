@@ -32,7 +32,14 @@ if analyze_btn:
         df = yf.download(stock_id, period=period, auto_adjust=True)
         if not df.empty:
             if isinstance(df.columns, pd.MultiIndex): df.columns = df.columns.get_level_values(0)
+            
+            # 計算各條均線
+            df['MA5'] = ta.sma(df['Close'], length=5)
+            df['MA10'] = ta.sma(df['Close'], length=10)
             df['MA20'] = ta.sma(df['Close'], length=20)
+            df['MA60'] = ta.sma(df['Close'], length=60)
+            
+            # 其他指標
             df = pd.concat([df, ta.bbands(df['Close'], length=20, std=2)], axis=1)
             df['RSI'] = ta.rsi(df['Close'], length=14)
             ai_score = tech_score_logic(df)
@@ -42,21 +49,4 @@ if analyze_btn:
             with t1:
                 c1, c2 = st.columns([1, 2])
                 with c1:
-                    fig = go.Figure(go.Indicator(mode="gauge+number", value=ai_score, title={'text': "技術評分"}, gauge={'axis':{'range':[0,100]},'bar':{'color':"#00d4ff"}}))
-                    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', font={'color':"white"}, height=300)
-                    st.plotly_chart(fig, use_container_width=True)
-                with c2:
-                    st.subheader(f"📊 {stock_id} 結論")
-                    if ai_score >= 70: st.success("✅ **【偏多看待】** 指標轉強。")
-                    elif ai_score >= 40: st.info("⚠️ **【盤整階段】** 建議觀察。")
-                    else: st.error("❌ **【偏空防守】** 指標走弱。")
-                    st.write(f"目前價格：{latest['Close']:.1f} / RSI：{latest['RSI']:.1f}")
-
-            with t2:
-                fig_k = go.Figure()
-                fig_k.add_trace(go.Candlestick(x=df.index, open=df['Open'], high=df['High'], low=df['Low'], close=df['Close'], name='K線'))
-                fig_k.add_trace(go.Scatter(x=df.index, y=df['MA20'], name='月線', line=dict(color='#00d4ff')))
-                fig_k.update_layout(template="plotly_dark", height=500, xaxis_rangeslider_visible=False)
-                st.plotly_chart(fig_k, use_container_width=True)
-        else:
-            st.error("查無資料")
+                    fig = go.Figure(go.Indicator(mode="gauge+number", value=ai_score, title={'text':
