@@ -29,7 +29,7 @@ with st.sidebar:
     stock_id = f"{raw_input}.TW" if raw_input.isdigit() else raw_input
     period = st.selectbox("時間軸", ["1y", "6mo", "2y"])
     st.divider()
-    days_input = st.slider("券商統計天數", 1, 10, 1) # 新增天數篩選器
+    days_input = st.slider("券商統計天數", 1, 10, 1)
     analyze_btn = st.button("🚀 執行全方位驗證")
 
 if analyze_btn:
@@ -46,8 +46,8 @@ if analyze_btn:
             df['RSI'] = ta.rsi(df['Close'], length=14)
             df = pd.concat([df, ta.bbands(df['Close'], length=20, std=2)], axis=1)
             
-            # 模擬數據：法人與券商 (因免費源無細節)
-            np.random.seed(42 + int(raw_input)) # 固定該代碼的模擬隨機值
+            # 模擬數據：法人與券商
+            np.random.seed(42 + int(raw_input) if raw_input.isdigit() else 42)
             df['Foreign'] = (df['Volume'] * (df['Close'].pct_change()) * 0.35).fillna(0)
             df['Trust'] = (df['Volume'] * (df['Close'].pct_change()) * 0.15).fillna(0)
             df['Dealers'] = (df['Volume'] * (df['Close'].pct_change()) * 0.08).fillna(0)
@@ -78,33 +78,29 @@ if analyze_btn:
                 v_colors = ['red' if df['Close'][i] >= df['Open'][i] else 'green' for i in range(len(df))]
                 fig_k.add_trace(go.Bar(x=df.index, y=df['Volume'], name='成交量', marker_color=v_colors), row=2, col=1)
                 fig_k.add_trace(go.Bar(x=df.index, y=df['Foreign'], name='外資', marker_color='#FF4500'), row=3, col=1)
-                fig_k.add_trace(go.Bar(x=df.index, y=df['Trust'], name['投信'], marker_color='#8A2BE2'), row=4, col=1)
+                fig_k.add_trace(go.Bar(x=df.index, y=df['Trust'], name='投信', marker_color='#8A2BE2'), row=4, col=1)
                 fig_k.add_trace(go.Bar(x=df.index, y=df['Dealers'], name='自營商', marker_color='#00CED1'), row=5, col=1)
-                fig_k.update_layout(template="plotly_dark", height=1000, xaxis_rangeslider_visible=False, legend=dict(orientation="h", y=1.02))
+                fig_k.update_layout(template="plotly_dark", height=1000, xaxis_rangeslider_visible=False, showlegend=True, legend=dict(orientation="h", y=1.02))
                 st.plotly_chart(fig_k, use_container_width=True)
 
             with t3:
                 st.subheader(f"📅 近 {days_input} 天券商分點買賣排行榜 (模擬統計)")
-                # 模擬券商名稱與數據
-                brokers = ["摩根大通", "美林", "高盛", "瑞銀", "元大", "凱基台北", "富邦", "國泰", "港商野村", "新加坡商瑞銀", "瑞士信貸", "美商高盛", "美林", "元大台北", "永豐金", "兆豐", "統一", "亞東", "台銀", "華南永昌"]
+                brokers = ["摩根大通", "美林", "高盛", "瑞銀", "元大", "凱基台北", "富邦", "國泰", "港商野村", "新加坡商瑞銀", "瑞士信貸", "美商高盛", "元大台北", "永豐金", "兆豐", "統一", "亞東", "台銀", "華南永昌"]
                 np.random.shuffle(brokers)
-                
-                # 根據自選天數調整買賣張數
-                scale = days_input * (latest['Volume'] / 100000)
-                buy_data = sorted([int(np.random.randint(500, 3000) * scale) for _ in range(15)], reverse=True)
-                sell_data = sorted([int(np.random.randint(500, 3000) * scale) for _ in range(15)], reverse=True)
+                scale = days_input * (latest['Volume'] / 50000)
+                buy_data = sorted([int(np.random.randint(500, 3000) * scale) for _ in range(15)], reverse=False)
+                sell_data = sorted([int(np.random.randint(500, 3000) * scale) for _ in range(15)], reverse=False)
                 
                 col_buy, col_sell = st.columns(2)
                 with col_buy:
                     st.write("🟢 **前 15 大買超券商**")
                     fig_buy = go.Figure(go.Bar(x=buy_data, y=brokers[:15], orientation='h', marker_color='red'))
-                    fig_buy.update_layout(template="plotly_dark", yaxis={'autorange': "reversed"}, height=500, margin=dict(l=20, r=20, t=20, b=20))
+                    fig_buy.update_layout(template="plotly_dark", height=500, margin=dict(l=20, r=20, t=20, b=20))
                     st.plotly_chart(fig_buy, use_container_width=True)
-                
                 with col_sell:
                     st.write("🔴 **前 15 大賣超券商**")
-                    fig_sell = go.Figure(go.Bar(x=sell_data, y=brokers[5:20], orientation='h', marker_color='green'))
-                    fig_sell.update_layout(template="plotly_dark", yaxis={'autorange': "reversed"}, height=500, margin=dict(l=20, r=20, t=20, b=20))
+                    fig_sell = go.Figure(go.Bar(x=sell_data, y=brokers[4:19], orientation='h', marker_color='green'))
+                    fig_sell.update_layout(template="plotly_dark", height=500, margin=dict(l=20, r=20, t=20, b=20))
                     st.plotly_chart(fig_sell, use_container_width=True)
         else:
             st.error(f"查無資料: {stock_id}")
